@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: praktikum_module_2
+
+kafka:
+  bootstrap-servers: localhost:9095, localhost:9096
+  acks: all
+  retries: 3
+  replicas: 2

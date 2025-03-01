@@ -1,0 +1,4 @@
+bin/kafka-topics.sh --create --topic messages --bootstrap-server localhost:9095, localhost:9096 --partitions 3 --replication-factor 2
+bin/kafka-topics.sh --create --topic blocked-users --bootstrap-server localhost:9095, localhost:9096 --partitions 3 --replication-factor 2
+
+
