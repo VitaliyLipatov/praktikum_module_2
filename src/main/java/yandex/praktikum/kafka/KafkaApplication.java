@@ -4,8 +4,10 @@ import org.springframework.boot.Banner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import yandex.praktikum.kafka.config.KafkaProperties;
 
+@EnableScheduling
 @EnableConfigurationProperties(KafkaProperties.class)
 @SpringBootApplication
 public class KafkaApplication {

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
 import org.springframework.stereotype.Component;
+import yandex.praktikum.kafka.dto.MyMessageSerdes;
 
 import java.util.Properties;
 
@@ -13,13 +14,13 @@ public class KafkaStreamProperties {
 
     private final KafkaProperties kafkaProperties;
 
-    public Properties getProperties() {
+    public Properties getProperties(String appName) {
         Properties properties = new Properties();
 
         // Уникальный идентификатор приложения Kafka Streams.
         // Помогает координировать и отслеживать состояния приложения внутри Kafka.
         // Все экземпляры приложения с одинаковым ID считаются частью одной группы.
-        properties.put(StreamsConfig.APPLICATION_ID_CONFIG, "praktikum-streams-app");
+        properties.put(StreamsConfig.APPLICATION_ID_CONFIG, appName);
 
         // Список адресов Kafka-брокеров, к которым будет подключаться приложение.
         // Здесь указывается минимум один брокер для начальной связи с кластером Kafka.
@@ -29,7 +30,7 @@ public class KafkaStreamProperties {
         properties.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.Integer().getClass().getName());
 
         // Указываем класс для сериализации и десериализации значений сообщений по умолчанию.
-        properties.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        properties.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, MyMessageSerdes.class.getName());
         return properties;
     }
 }

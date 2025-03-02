@@ -10,10 +10,12 @@ import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.protocol.types.Field;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import yandex.praktikum.kafka.config.KafkaProperties;
 import yandex.praktikum.kafka.dto.MyMessage;
 import yandex.praktikum.kafka.dto.MyMessageSerializer;
+import yandex.praktikum.kafka.streams.KafkaStreamsMessageFilter;
 
 import javax.annotation.PostConstruct;
 import java.io.InputStream;
@@ -24,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,45 +34,45 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class Producer {
 
+    private static final List<String> INITIAL_DEPRECATED_WORDS = List.of("fuck", "shit");
     private final KafkaProperties kafkaProperties;
 
-    @PostConstruct
-    public void init() {
-        // Запуск продьюсера
-        ExecutorService producerExecutorService = Executors.newSingleThreadExecutor();
-        producerExecutorService.submit(this::send);
-    }
-
-    private void send() {
+    @Scheduled(fixedDelayString = "20", timeUnit = TimeUnit.SECONDS)
+    public void sendMessages() {
         KafkaProducer<Integer, MyMessage> myMessageProducer = getMyMessageProducer();
 
         // Отправка 10 сообщений в топик
         for (int i = 0; i < 10; i++) {
             var myMessage = MyMessage.builder()
                     .author("user" + "-" + i)
-                    .message("Hello")
-                    .recipient("recipient" + "-" + i)
+                    .message(getMessage(i))
+                    .recipient("user-1")
                     .build();
             ProducerRecord<Integer, MyMessage> record = new ProducerRecord<>("messages", i, myMessage);
             myMessageProducer.send(record);
             log.info("Message {} was successfully sent in topic messages", record.value());
         }
+        myMessageProducer.close();
 
         KafkaProducer<String, String> stringProducer = getStringProducer();
-        // Имя пользователя напротив списка пользователей, сообщения от которых будут зблокированы
-        Map<String, List<String>> blockedUsersMap = getBlockedUsers();
-        blockedUsersMap.keySet().forEach(key -> {
-            List<String> blockedUsers = blockedUsersMap.get(key);
-            blockedUsers.forEach(blockedUser -> {
-                ProducerRecord<String, String> record = new ProducerRecord<>("blocked-users", key, blockedUser);
-                stringProducer.send(record);
-                log.info("Message {} was successfully sent in topic blocked-users", record.value());
-            });
+        INITIAL_DEPRECATED_WORDS.forEach(deprecatedWord -> {
+            ProducerRecord<String, String> record = new ProducerRecord<>("deprecated-words", deprecatedWord, deprecatedWord);
+            stringProducer.send(record);
+            log.info("Deprecated word {} was successfully sent in topic deprecated-words", record.value());
         });
 
         // Закрытие продюсера
-        myMessageProducer.close();
         stringProducer.close();
+    }
+
+    private String getMessage(int i) {
+        if (i == 0) {
+            return "Fuck you man!";
+        }
+        if (i == 9) {
+            return "What a piece of shit?";
+        }
+        return "Hello, buddy!";
     }
 
     private KafkaProducer<Integer, MyMessage> getMyMessageProducer() {
@@ -104,16 +107,5 @@ public class Producer {
         properties.put(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, kafkaProperties.getReplicas());
 
         return properties;
-    }
-
-    @SneakyThrows
-    private Map<String, List<String>> getBlockedUsers() {
-        Map<String, List<String>> blockedUsersMap = new HashMap<>();
-        try (InputStream inputStream = Producer.class.getResourceAsStream("blocked_user1.txt")) {
-            String blockedUsers = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-            String[] strings = blockedUsers.split(";");
-            blockedUsersMap.put("user-1", Arrays.stream(strings).toList());
-        }
-        return blockedUsersMap;
     }
 }
