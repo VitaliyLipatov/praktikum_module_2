@@ -7,3 +7,6 @@ kafka:
   acks: all
   retries: 3
   replicas: 2
+  topic-messages: messages
+  topic-deprecated-words: deprecated-words
+  topic-filtered-messages: filtered-messages

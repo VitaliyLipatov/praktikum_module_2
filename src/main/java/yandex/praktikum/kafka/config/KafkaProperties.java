@@ -13,4 +13,7 @@ public class KafkaProperties {
     private String acks;
     private Integer retries;
     private String replicas;
+    private String topicMessages;
+    private String topicDeprecatedWords;
+    private String topicFilteredMessages;
 }

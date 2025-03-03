@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.*;
@@ -12,6 +11,7 @@ import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.apache.kafka.streams.state.Stores;
 import org.springframework.stereotype.Component;
+import yandex.praktikum.kafka.config.KafkaProperties;
 import yandex.praktikum.kafka.config.KafkaStreamProperties;
 
 import java.util.Properties;
@@ -24,6 +24,7 @@ import static org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.St
 @RequiredArgsConstructor
 public class KafkaTableHandler {
 
+    private final KafkaProperties kafkaProperties;
     private final KafkaStreamProperties kafkaStreamProperties;
 
     public ReadOnlyKeyValueStore<String, String> getDeprecatedWords() {
@@ -36,7 +37,7 @@ public class KafkaTableHandler {
             // Создание топологии
             StreamsBuilder builder = new StreamsBuilder();
             // Создание потока из Kafka-топика
-            KStream<String, String> stream = builder.stream("deprecated-words",
+            KStream<String, String> stream = builder.stream(kafkaProperties.getTopicDeprecatedWords(),
                     Consumed.with(Serdes.String(), Serdes.String()));
             // Преобразование потока в таблицу с помощью метода toTable()
             stream.toTable(Materialized.<String, String>as(Stores.persistentKeyValueStore("deprecated-word-store"))

@@ -1,3 +1,5 @@
+ОТВЕТЫ НА ЗАМЕЧАНИЯ В ФАЙЛЕ замечания.txt в resources.
+
 # praktikum_module_2
 Итоговый проект второго модуля Apache Kafka (Яндекс Практикум)
 
@@ -57,3 +59,17 @@ Processed a total of 20 messages
 В консоле видим 20 обработанных сообщеений, сообщения с author user-6 или user-8 и получателем user-1 отсутствуют,
 т.к. были отфильтрованы.
 Также есть ряд сообщений "* you man!" и "what a piece of *?", в которых запрещённые слова были заменены на *.
+
+Обновлённый результат работы приложения:
+$ bin/kafka-console-consumer.sh --bootstrap-server localhost:9095, localhost:9096 --topic filtered-messages --max-messages 10
+{"author":"user-0","message":"Hello World ","recipient":"user-1"}
+{"author":"user-1","message":"Hello World ","recipient":"user-1"}
+{"author":"user-2","message":"Hello World buddy what * ","recipient":"user-1"}
+{"author":"user-5","message":"Hello World buddy what * piece man ","recipient":"user-1"}
+{"author":"user-1","message":"Hello World buddy what * piece man ","recipient":"user-1"}
+{"author":"user-0","message":"Hello World buddy what * ","recipient":"user-1"}
+{"author":"user-3","message":"Hello ","recipient":"user-1"}
+{"author":"user-4","message":"Hello ","recipient":"user-1"}
+{"author":"user-1","message":"Hello World buddy what * ","recipient":"user-1"}
+{"author":"user-7","message":"Hello World buddy ","recipient":"user-1"}
+Processed a total of 10 messages

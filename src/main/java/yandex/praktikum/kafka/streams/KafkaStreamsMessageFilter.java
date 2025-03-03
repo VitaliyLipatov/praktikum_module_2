@@ -5,28 +5,24 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
-import org.springframework.boot.context.event.ApplicationStartedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import yandex.praktikum.kafka.config.KafkaProperties;
 import yandex.praktikum.kafka.config.KafkaStreamProperties;
 import yandex.praktikum.kafka.dto.BlockedUsers;
 import yandex.praktikum.kafka.dto.MyMessage;
 import yandex.praktikum.kafka.dto.MyMessageSerdes;
 
 import javax.annotation.PostConstruct;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static java.util.stream.Collectors.toList;
 import static org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_CLIENT;
 
 @Slf4j
@@ -34,6 +30,7 @@ import static org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.St
 @RequiredArgsConstructor
 public class KafkaStreamsMessageFilter {
 
+    private final KafkaProperties kafkaProperties;
     private final KafkaStreamProperties kafkaStreamProperties;
     private final BlockedUsers blockedUsers;
     private final KafkaTableHandler kafkaTableHandler;
@@ -52,7 +49,7 @@ public class KafkaStreamsMessageFilter {
             // Создание StreamsBuilder
             StreamsBuilder builder = new StreamsBuilder();
 
-            KStream<Integer, MyMessage> messagesStream = builder.stream("messages",
+            KStream<Integer, MyMessage> messagesStream = builder.stream(kafkaProperties.getTopicMessages(),
                     Consumed.with(Serdes.Integer(), new MyMessageSerdes()));
 
             // Получение блокированных пользователей для user-1
@@ -63,7 +60,8 @@ public class KafkaStreamsMessageFilter {
 
             ReadOnlyKeyValueStore<String, String> deprecatedWords = kafkaTableHandler.getDeprecatedWords();
             // Отправка отфильтрованных данных в другой топик
-            filteredUsers.mapValues(value -> filterWords(value, deprecatedWords)).to("filtered-messages");
+            filteredUsers.mapValues(value -> filterWords(value, deprecatedWords))
+                    .to(kafkaProperties.getTopicFilteredMessages());
 
             // Инициализация Kafka Streams
             KafkaStreams streams = new KafkaStreams(builder.build(), properties);
@@ -99,8 +97,8 @@ public class KafkaStreamsMessageFilter {
         while (keyValueIterator.hasNext()) {
             String currDeprWord = keyValueIterator.next().value;
             String message = myMessage.getMessage();
-            if (message.toLowerCase().contains(currDeprWord.toLowerCase())) {
-                String newMessage = message.toLowerCase().replace(currDeprWord.toLowerCase(), "*");
+            if (message.contains(currDeprWord)) {
+                String newMessage = message.replace(currDeprWord, "*");
                 myMessage.setMessage(newMessage);
             }
         }

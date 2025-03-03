@@ -17,17 +17,8 @@ import yandex.praktikum.kafka.dto.MyMessage;
 import yandex.praktikum.kafka.dto.MyMessageSerializer;
 import yandex.praktikum.kafka.streams.KafkaStreamsMessageFilter;
 
-import javax.annotation.PostConstruct;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -35,44 +26,49 @@ import java.util.stream.Collectors;
 public class Producer {
 
     private static final List<String> INITIAL_DEPRECATED_WORDS = List.of("fuck", "shit");
+    private static final List<String> RANDOM_WORDS = List.of("Hello", "World", "buddy", "what", "shit", "piece", "man",
+            "of", "a", "fuck");
     private final KafkaProperties kafkaProperties;
 
     @Scheduled(fixedDelayString = "20", timeUnit = TimeUnit.SECONDS)
     public void sendMessages() {
         KafkaProducer<Integer, MyMessage> myMessageProducer = getMyMessageProducer();
 
-        // Отправка 10 сообщений в топик
-        for (int i = 0; i < 10; i++) {
+        // Отправка сообщений в топик
+        int randomNumber = getRandomNumber(10);
+        for (int i = 0; i < randomNumber; i++) {
             var myMessage = MyMessage.builder()
                     .author("user" + "-" + i)
-                    .message(getMessage(i))
+                    .message(getMessage())
                     .recipient("user-1")
                     .build();
-            ProducerRecord<Integer, MyMessage> record = new ProducerRecord<>("messages", i, myMessage);
+            ProducerRecord<Integer, MyMessage> record = new ProducerRecord<>(kafkaProperties.getTopicMessages(), i,
+                    myMessage);
             myMessageProducer.send(record);
-            log.info("Message {} was successfully sent in topic messages", record.value());
+            log.info("Сообщение {} успешно отправлено в топик {}", record.value(), kafkaProperties.getTopicMessages());
         }
         myMessageProducer.close();
 
         KafkaProducer<String, String> stringProducer = getStringProducer();
         INITIAL_DEPRECATED_WORDS.forEach(deprecatedWord -> {
-            ProducerRecord<String, String> record = new ProducerRecord<>("deprecated-words", deprecatedWord, deprecatedWord);
+            ProducerRecord<String, String> record = new ProducerRecord<>(kafkaProperties.getTopicDeprecatedWords(),
+                    deprecatedWord, deprecatedWord);
             stringProducer.send(record);
-            log.info("Deprecated word {} was successfully sent in topic deprecated-words", record.value());
+            log.info("Запрещённое слово {} успешно отправлено в топик {}", record.value(),
+                    kafkaProperties.getTopicDeprecatedWords());
         });
 
         // Закрытие продюсера
         stringProducer.close();
     }
 
-    private String getMessage(int i) {
-        if (i == 0) {
-            return "Fuck you man!";
+    private String getMessage() {
+        int randomNumber = getRandomNumber(RANDOM_WORDS.size());
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int j = 0; j < randomNumber; j++) {
+            stringBuilder.append(RANDOM_WORDS.get(j)).append(" ");
         }
-        if (i == 9) {
-            return "What a piece of shit?";
-        }
-        return "Hello, buddy!";
+        return stringBuilder.toString();
     }
 
     private KafkaProducer<Integer, MyMessage> getMyMessageProducer() {
@@ -107,5 +103,10 @@ public class Producer {
         properties.put(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, kafkaProperties.getReplicas());
 
         return properties;
+    }
+
+    private int getRandomNumber(int max) {
+        Random random = new Random();
+        return random.nextInt(max - 1) + 1;
     }
 }
