@@ -39,7 +39,7 @@ public class KafkaTableHandler {
             KStream<String, String> stream = builder.stream("deprecated-words",
                     Consumed.with(Serdes.String(), Serdes.String()));
             // Преобразование потока в таблицу с помощью метода toTable()
-            stream.toTable(Materialized.<String, String>as(Stores.inMemoryKeyValueStore("deprecated-word-store"))
+            stream.toTable(Materialized.<String, String>as(Stores.persistentKeyValueStore("deprecated-word-store"))
                     .withKeySerde(Serdes.String())
                     .withValueSerde(Serdes.String()));
 

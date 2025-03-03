@@ -100,7 +100,7 @@ public class KafkaStreamsMessageFilter {
             String currDeprWord = keyValueIterator.next().value;
             String message = myMessage.getMessage();
             if (message.toLowerCase().contains(currDeprWord.toLowerCase())) {
-                String newMessage = message.toLowerCase().replace(currDeprWord.toLowerCase(), "");
+                String newMessage = message.toLowerCase().replace(currDeprWord.toLowerCase(), "*");
                 myMessage.setMessage(newMessage);
             }
         }
