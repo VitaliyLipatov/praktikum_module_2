@@ -1,5 +1,7 @@
 package yandex.praktikum.kafka.dto;
 
+import lombok.Builder;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.stereotype.Component;
@@ -12,19 +14,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Component
+@Getter
+@Builder
 public class BlockedUsers {
 
-    // Имя пользователя напротив списка пользователей, сообщения от которых будут заблокированы
-    private final Map<String, List<String>> blockedUsersMap = new HashMap<>();
+    // Имя пользователя, для которого нужно заблокировать пользователей
+    private String user;
+    // Cписок пользователей, сообщения от которых будут заблокированы
+    private List<String> blockedUsers;
 
-    @SneakyThrows
-    public Map<String, List<String>> getBlockedUsers(String userName, String fileName) {
-        try (InputStream inputStream = BlockedUsers.class.getResourceAsStream(fileName)) {
-            String blockedUsers = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-            String[] strings = blockedUsers.split(";");
-            blockedUsersMap.put(userName, Arrays.stream(strings).toList());
-        }
-        return blockedUsersMap;
-    }
 }

@@ -10,3 +10,4 @@ kafka:
   topic-messages: messages
   topic-deprecated-words: deprecated-words
   topic-filtered-messages: filtered-messages
+  topic-blocked-users: blocked-users

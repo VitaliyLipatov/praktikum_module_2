@@ -16,4 +16,5 @@ public class KafkaProperties {
     private String topicMessages;
     private String topicDeprecatedWords;
     private String topicFilteredMessages;
+    private String topicBlockedUsers;
 }

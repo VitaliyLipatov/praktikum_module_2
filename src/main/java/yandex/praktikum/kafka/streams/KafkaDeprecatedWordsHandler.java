@@ -1,5 +1,6 @@
 package yandex.praktikum.kafka.streams;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
@@ -7,9 +8,11 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.apache.kafka.streams.state.Stores;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import yandex.praktikum.kafka.config.KafkaProperties;
 import yandex.praktikum.kafka.config.KafkaStreamProperties;
@@ -20,14 +23,23 @@ import static org.apache.kafka.streams.StoreQueryParameters.fromNameAndType;
 import static org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_CLIENT;
 
 @Slf4j
+@Getter
 @Component
 @RequiredArgsConstructor
-public class KafkaTableHandler {
+public class KafkaDeprecatedWordsHandler {
 
     private final KafkaProperties kafkaProperties;
     private final KafkaStreamProperties kafkaStreamProperties;
+    private final ReadOnlyKeyValueStore<String, String> readOnlyKeyValueStore;
 
-    public ReadOnlyKeyValueStore<String, String> getDeprecatedWords() {
+    @Autowired
+    public KafkaDeprecatedWordsHandler(KafkaProperties kafkaProperties, KafkaStreamProperties kafkaStreamProperties) {
+        this.kafkaProperties = kafkaProperties;
+        this.kafkaStreamProperties = kafkaStreamProperties;
+        this.readOnlyKeyValueStore = setReadOnlyKeyValueStore();
+    }
+
+    private ReadOnlyKeyValueStore<String, String> setReadOnlyKeyValueStore() {
         try {
             // Конфигурация Kafka Streams
             Properties config = kafkaStreamProperties.getProperties("deprecated-words-to-table");
@@ -40,7 +52,7 @@ public class KafkaTableHandler {
             KStream<String, String> stream = builder.stream(kafkaProperties.getTopicDeprecatedWords(),
                     Consumed.with(Serdes.String(), Serdes.String()));
             // Преобразование потока в таблицу с помощью метода toTable()
-            stream.toTable(Materialized.<String, String>as(Stores.persistentKeyValueStore("deprecated-word-store"))
+            stream.toTable(Materialized.<String, String>as(Stores.inMemoryKeyValueStore("deprecated-word-store"))
                     .withKeySerde(Serdes.String())
                     .withValueSerde(Serdes.String()));
 
@@ -74,5 +86,9 @@ public class KafkaTableHandler {
             log.error("Ошибка при работе Kafka Streams приложения: ", ex);
             throw new RuntimeException(ex);
         }
+    }
+
+    public KeyValueIterator<String, String> getDeprecatedWordsIterator() {
+        return readOnlyKeyValueStore.all();
     }
 }

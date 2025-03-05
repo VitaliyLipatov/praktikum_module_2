@@ -1,24 +1,25 @@
 package yandex.praktikum.kafka.producer;
 
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.config.TopicConfig;
-import org.apache.kafka.common.protocol.types.Field;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import yandex.praktikum.kafka.config.KafkaProperties;
+import yandex.praktikum.kafka.dto.BlockedUsers;
 import yandex.praktikum.kafka.dto.MyMessage;
 import yandex.praktikum.kafka.dto.MyMessageSerializer;
-import yandex.praktikum.kafka.streams.KafkaStreamsMessageFilter;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -31,7 +32,7 @@ public class Producer {
     private final KafkaProperties kafkaProperties;
 
     @Scheduled(fixedDelayString = "20", timeUnit = TimeUnit.SECONDS)
-    public void sendMessages() {
+    public void sendAllMessagesInAllTopicsForExample() {
         KafkaProducer<Integer, MyMessage> myMessageProducer = getMyMessageProducer();
 
         // Отправка сообщений в топик
@@ -40,7 +41,7 @@ public class Producer {
             var myMessage = MyMessage.builder()
                     .author("user" + "-" + i)
                     .message(getMessage())
-                    .recipient("user-1")
+                    .recipient("user" + "-" + getRandomNumber(10))
                     .build();
             ProducerRecord<Integer, MyMessage> record = new ProducerRecord<>(kafkaProperties.getTopicMessages(), i,
                     myMessage);
@@ -49,16 +50,43 @@ public class Producer {
         }
         myMessageProducer.close();
 
-        KafkaProducer<String, String> stringProducer = getStringProducer();
-        INITIAL_DEPRECATED_WORDS.forEach(deprecatedWord -> {
-            ProducerRecord<String, String> record = new ProducerRecord<>(kafkaProperties.getTopicDeprecatedWords(),
-                    deprecatedWord, deprecatedWord);
-            stringProducer.send(record);
-            log.info("Запрещённое слово {} успешно отправлено в топик {}", record.value(),
-                    kafkaProperties.getTopicDeprecatedWords());
-        });
+        INITIAL_DEPRECATED_WORDS.forEach(this::sendDeprecatedWord);
 
-        // Закрытие продюсера
+        BlockedUsers firstBlockedUser = BlockedUsers.builder()
+                .user("user" + "-" + getRandomNumber(10))
+                .blockedUsers(List.of("user" + "-" + randomNumber, "user" + "-" + ++randomNumber))
+                .build();
+
+        BlockedUsers secondBlockedUser = BlockedUsers.builder()
+                .user("user" + "-" + getRandomNumber(10))
+                .blockedUsers(List.of("user" + "-" + randomNumber, "user" + "-" + ++randomNumber))
+                .build();
+
+        sendBlockedUsers(firstBlockedUser);
+        sendBlockedUsers(secondBlockedUser);
+    }
+
+    public void sendBlockedUsers(BlockedUsers blockedUsers) {
+        List<String> strings = blockedUsers.getBlockedUsers();
+        String value = String.join(";", strings);
+        ProducerRecord<String, String> record = new ProducerRecord<>(kafkaProperties.getTopicBlockedUsers(),
+                blockedUsers.getUser(), value);
+        KafkaProducer<String, String> stringProducer = getStringProducer();
+        stringProducer.send(record);
+        log.info("Для пользователя {} будут заблокированы сообщения от пользователей {}. "
+                        + "Сообщение успешно отправлено в топик {}", blockedUsers.getUser(), record.value(),
+                kafkaProperties.getTopicDeprecatedWords());
+
+        stringProducer.close();
+    }
+
+    public void sendDeprecatedWord(String deprecatedWord) {
+        KafkaProducer<String, String> stringProducer = getStringProducer();
+        ProducerRecord<String, String> record = new ProducerRecord<>(kafkaProperties.getTopicDeprecatedWords(),
+                deprecatedWord, deprecatedWord);
+        stringProducer.send(record);
+        log.info("Запрещённое слово {} успешно отправлено в топик {}", record.value(),
+                kafkaProperties.getTopicDeprecatedWords());
         stringProducer.close();
     }
 

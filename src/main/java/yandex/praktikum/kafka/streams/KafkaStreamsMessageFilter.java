@@ -32,8 +32,8 @@ public class KafkaStreamsMessageFilter {
 
     private final KafkaProperties kafkaProperties;
     private final KafkaStreamProperties kafkaStreamProperties;
-    private final BlockedUsers blockedUsers;
-    private final KafkaTableHandler kafkaTableHandler;
+    private final KafkaDeprecatedWordsHandler kafkaDeprecatedWordsHandler;
+    private final KafkaBlockedUsersHandler kafkaBlockedUsersHandler;
 
     @PostConstruct
     public void init() {
@@ -52,15 +52,11 @@ public class KafkaStreamsMessageFilter {
             KStream<Integer, MyMessage> messagesStream = builder.stream(kafkaProperties.getTopicMessages(),
                     Consumed.with(Serdes.Integer(), new MyMessageSerdes()));
 
-            // Получение блокированных пользователей для user-1
-            Map<String, List<String>> blockedUsersMap = blockedUsers.getBlockedUsers("user-1", "blocked_user1.txt");
-
             // Фильтрация пользователей
-            KStream<Integer, MyMessage> filteredUsers = messagesStream.filter(((key, myMessage) -> filterUsers(myMessage, blockedUsersMap)));
+            KStream<Integer, MyMessage> filteredUsers = messagesStream.filter(((key, myMessage) -> filterUsers(myMessage)));
 
-            ReadOnlyKeyValueStore<String, String> deprecatedWords = kafkaTableHandler.getDeprecatedWords();
             // Отправка отфильтрованных данных в другой топик
-            filteredUsers.mapValues(value -> filterWords(value, deprecatedWords))
+            filteredUsers.mapValues(this::filterWords)
                     .to(kafkaProperties.getTopicFilteredMessages());
 
             // Инициализация Kafka Streams
@@ -80,20 +76,13 @@ public class KafkaStreamsMessageFilter {
         }
     }
 
-    private boolean filterUsers(MyMessage myMessage, Map<String, List<String>> blockedUsersMap) {
-        final boolean[] needHandle = {true};
-        blockedUsersMap.keySet().forEach(user -> {
-            if (user.equalsIgnoreCase(myMessage.getRecipient())) {
-                if (blockedUsersMap.get(user).contains(myMessage.getAuthor())) {
-                    needHandle[0] = false;
-                }
-            }
-        });
-        return needHandle[0];
+    private boolean filterUsers(MyMessage myMessage) {
+        List<String> blockedUsersForUser = kafkaBlockedUsersHandler.getBlockedUsersForUser(myMessage.getRecipient());
+        return !blockedUsersForUser.contains(myMessage.getAuthor());
     }
 
-    private MyMessage filterWords(MyMessage myMessage, ReadOnlyKeyValueStore<String, String> deprecatedWords) {
-        KeyValueIterator<String, String> keyValueIterator = deprecatedWords.all();
+    private MyMessage filterWords(MyMessage myMessage) {
+        KeyValueIterator<String, String> keyValueIterator = kafkaDeprecatedWordsHandler.getDeprecatedWordsIterator();
         while (keyValueIterator.hasNext()) {
             String currDeprWord = keyValueIterator.next().value;
             String message = myMessage.getMessage();
