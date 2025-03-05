@@ -1,29 +1,8 @@
 bin/kafka-topics.sh --create --topic messages --bootstrap-server localhost:9095, localhost:9096 --partitions 3 --replication-factor 2
 bin/kafka-topics.sh --create --topic filtered-messages --bootstrap-server localhost:9095, localhost:9096 --partitions 3 --replication-factor 2
 bin/kafka-topics.sh --create --topic deprecated-words --bootstrap-server localhost:9095, localhost:9096 --partitions 3 --replication-factor 2
+bin/kafka-topics.sh --create --topic blocked-users --bootstrap-server localhost:9095, localhost:9096 --partitions 3 --replication-factor 2
 
-$ bin/kafka-console-consumer.sh --bootstrap-server localhost:9095, localhost:9096 --topic filtered-messages --max-messages 20
-{"author":"user-2","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-5","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-0","message":" you man!","recipient":"user-1"}
-{"author":"user-3","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-4","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-9","message":"what a piece of ?","recipient":"user-1"}
-{"author":"user-1","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-7","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-2","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-5","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-0","message":" you man!","recipient":"user-1"}
-{"author":"user-3","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-4","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-9","message":"what a piece of ?","recipient":"user-1"}
-{"author":"user-1","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-7","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-1","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-7","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-2","message":"Hello, buddy!","recipient":"user-1"}
-{"author":"user-5","message":"Hello, buddy!","recipient":"user-1"}
-Processed a total of 20 messages
 
 
 
